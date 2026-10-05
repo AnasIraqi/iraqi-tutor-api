@@ -64,7 +64,7 @@
       font-weight: 600;
       font-size: 0.9rem;
     }
-    select, textarea, input[type="file"] {
+    select, textarea {
       width: 100%;
       padding: 10px 14px;
       border-radius: 8px;
@@ -101,6 +101,41 @@
       background-color: #9cbda8;
       cursor: not-allowed;
     }
+    .btn-action {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      flex: 1;
+      transition: opacity 0.2s;
+    }
+    .btn-action:hover {
+      opacity: 0.9;
+    }
+    .btn-camera {
+      background-color: #2563eb;
+    }
+    .btn-gallery {
+      background-color: #4b5563;
+    }
+    .preview-box {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #eef2ff;
+      border: 1px dashed #6366f1;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85rem;
+    }
     .result-box {
       margin-top: 20px;
       padding: 16px;
@@ -122,6 +157,7 @@
       <p>وفق المعايير الوزارية لمركز الفحص والتقويم</p>
     </div>
 
+    <!-- المرحلة الدراسية -->
     <div class="form-group">
       <label for="stage">المرحلة الدراسية</label>
       <select id="stage" onchange="updateGrades()">
@@ -131,50 +167,120 @@
       </select>
     </div>
 
+    <!-- الصف الدراسي -->
     <div class="form-group">
       <label for="grade">الصف الدراسي</label>
       <select id="grade" onchange="updateSubjects()"></select>
     </div>
 
+    <!-- المادة الدراسية -->
     <div class="form-group">
       <label for="subject">المادة</label>
       <select id="subject"></select>
     </div>
 
+    <!-- نص السؤال -->
     <div class="form-group">
       <label for="question">اكتب السؤال الوزاري أو استفسارك المنهجي</label>
       <textarea id="question" placeholder="مثال: اعرب ما تحته خط، أو اكتب منطوق المسألة الرياضية..."></textarea>
     </div>
 
+    <!-- أزرار التصوير والاستوديو -->
     <div class="form-group">
-      <label for="image">أو أرفق صورة السؤال / الصفحة الوزارية (اختياري)</label>
-      <input type="file" id="image" accept="image/*">
+      <label>أرفق صورة السؤال / المسألة الوزارية (اختياري)</label>
+      <div style="display: flex; gap: 10px; margin-top: 6px;">
+        <button type="button" class="btn-action btn-camera" onclick="document.getElementById('cameraInput').click()">
+          📷 التقاط صورة
+        </button>
+        <button type="button" class="btn-action btn-gallery" onclick="document.getElementById('galleryInput').click()">
+          🖼️ من الاستوديو
+        </button>
+      </div>
+
+      <!-- حقول الإدخال المخفية للكاميرا والملفات -->
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleImageSelected(this)">
+      <input type="file" id="galleryInput" accept="image/*" style="display: none;" onchange="handleImageSelected(this)">
+
+      <!-- معاينة اسم الصورة وإلغاؤها -->
+      <div id="imagePreviewContainer" style="display: none;" class="preview-box">
+        <span id="imageName" style="color: #1e3a8a; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+        <button type="button" onclick="clearSelectedImage()" style="background: none; border: none; color: #dc2626; cursor: pointer; font-weight: bold;">✕ حذف الصورة</button>
+      </div>
     </div>
 
+    <!-- زر الإرسال -->
     <button class="btn" id="submitBtn" onclick="sendQuery()">الحصول على الجواب النموذجي الوزاري</button>
 
+    <!-- صندوق النتيجة -->
     <div class="result-box" id="resultBox"></div>
   </div>
 
   <script>
+    // بيانات المراحل والصفوف والمناهج العراقية
     const data = {
       "الابتدائية": {
-        grades: ["الأول الابتدائي", "الثاني الابتدائي", "الثالث الابتدائي", "الرابع الابتدائي", "الخامس الابتدائي", "السادس الابتدائي"],
-        subjects: ["التربية الإسلامية", "اللغة العربية", "الرياضيات", "العلوم", "اللغة الإنكليزية", "الاجتماعيات"]
+        grades: [
+          "الأول الابتدائي", 
+          "الثاني الابتدائي", 
+          "الثالث الابتدائي", 
+          "الرابع الابتدائي", 
+          "الخامس الابتدائي", 
+          "السادس الابتدائي (وزاري)"
+        ],
+        subjects: [
+          "التربية الإسلامية", 
+          "اللغة العربية", 
+          "الرياضيات", 
+          "العلوم", 
+          "اللغة الإنكليزية", 
+          "الاجتماعيات"
+        ]
       },
       "المتوسطة": {
-        grades: ["الأول المتوسط", "الثاني المتوسط", "الثالث المتوسط (وزاري)"],
-        subjects: ["التربية الإسلامية", "اللغة العربية", "اللغة الإنكليزية", "الرياضيات", "الكيمياء", "الفيزياء", "الأحياء", "الاجتماعيات"]
+        grades: [
+          "الأول المتوسط", 
+          "الثاني المتوسط", 
+          "الثالث المتوسط (وزاري)"
+        ],
+        subjects: [
+          "التربية الإسلامية", 
+          "اللغة العربية", 
+          "اللغة الإنكليزية", 
+          "الرياضيات", 
+          "الكيمياء", 
+          "الفيزياء", 
+          "الأحياء", 
+          "الاجتماعيات"
+        ]
       },
       "الإعدادية": {
         grades: [
-          "الرابع العلمي", "الرابع الأدبي", 
-          "الخامس العلمي", "الخامس الأدبي", 
-          "السادس العلمي (وزاري)", "السادس الأدبي (وزاري)"
+          "الرابع العلمي", 
+          "الرابع الأدبي", 
+          "الخامس العلمي", 
+          "الخامس الأدبي", 
+          "السادس العلمي (وزاري)", 
+          "السادس الأدبي (وزاري)"
         ],
         subjectsMap: {
-          "علمي": ["التربية الإسلامية", "اللغة العربية", "اللغة الإنكليزية", "الرياضيات", "الكيمياء", "الفيزياء", "الأحياء"],
-          "أدبي": ["التربية الإسلامية", "اللغة العربية", "اللغة الإنكليزية", "الرياضيات", "التاريخ", "الجغرافيا", "الاقتصاد"]
+          "علمي": [
+            "التربية الإسلامية", 
+            "اللغة العربية", 
+            "اللغة الإنكليزية", 
+            "الرياضيات", 
+            "الكيمياء", 
+            "الفيزياء", 
+            "الأحياء"
+          ],
+          "أدبي": [
+            "التربية الإسلامية", 
+            "اللغة العربية", 
+            "اللغة الإنكليزية", 
+            "الرياضيات", 
+            "التاريخ", 
+            "الجغرافيا", 
+            "الاقتصاد"
+          ]
         }
       }
     };
@@ -220,28 +326,56 @@
       });
     }
 
-    // التهيئة المبدئية عند التحميل
-    updateGrades();
+    // إدارة الصور والكاميرا
+    let activeImageFile = null;
 
+    function handleImageSelected(input) {
+      if (input.files && input.files[0]) {
+        activeImageFile = input.files[0];
+        document.getElementById("imageName").textContent = "📷 " + activeImageFile.name;
+        document.getElementById("imagePreviewContainer").style.display = "flex";
+      }
+    }
+
+    function clearSelectedImage() {
+      activeImageFile = null;
+      document.getElementById("cameraInput").value = "";
+      document.getElementById("galleryInput").value = "";
+      document.getElementById("imagePreviewContainer").style.display = "none";
+    }
+
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = error => reject(error);
+      });
+    }
+
+    // إرسال الطلب إلى Cloudflare Worker
     async function sendQuery() {
       const btn = document.getElementById("submitBtn");
       const resBox = document.getElementById("resultBox");
       const q = document.getElementById("question").value.trim();
-      const fileInput = document.getElementById("image");
 
-      if (!q && !fileInput.files[0]) {
-        alert("يرجى كتابة سؤال أو رفع صورة أولاً");
+      if (!q && !activeImageFile) {
+        alert("يرجى كتابة سؤال أو التقاط/إرفاق صورة أولاً");
         return;
       }
 
       btn.disabled = true;
       btn.textContent = "جاري استخراج الجواب النموذجي الوزاري...";
       resBox.style.display = "block";
-      resBox.textContent = "يرجى الانتظار، جاري التدقيق والحل...";
+      resBox.textContent = "يرجى الانتظار، جاري التدقيق والحل وفق معايير وزارة التربية...";
 
       let imgBase64 = null;
-      if (fileInput.files[0]) {
-        imgBase64 = await toBase64(fileInput.files[0]);
+      if (activeImageFile) {
+        try {
+          imgBase64 = await toBase64(activeImageFile);
+        } catch (e) {
+          console.error("فشل قراءة الصورة", e);
+        }
       }
 
       const payload = {
@@ -259,24 +393,18 @@
           body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
-        resBox.textContent = data.solution || data.error || "تعذر الحصول على إجابة.";
+        const resData = await response.json();
+        resBox.textContent = resData.solution || resData.error || "تعذر الحصول على إجابة.";
       } catch (err) {
-        resBox.textContent = "حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة مرة أخرى.";
+        resBox.textContent = "حدث خطأ أثناء الاتصال بالخادم. يرجى التأكد من اتصال الإنترنت والمحاولة ثانية.";
       } finally {
         btn.disabled = false;
         btn.textContent = "الحصول على الجواب النموذجي الوزاري";
       }
     }
 
-    function toBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = error => reject(error);
-      });
-    }
+    // تشغيل القوائم تلقائياً عند فتح الصفحة
+    updateGrades();
   </script>
 </body>
 </html>
